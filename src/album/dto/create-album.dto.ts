@@ -1,1 +1,6 @@
-export class CreateAlbumDto {}
+export class CreateAlbumDto {
+  id: string; // uuid v4
+  name: string;
+  year: number;
+  artistId: string | null;
+}
