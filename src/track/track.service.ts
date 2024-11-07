@@ -1,26 +1,53 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTrackDto } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
+import { Track } from './interfaces/track.interface';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class TrackService {
-  create(createTrackDto: CreateTrackDto) {
-    return 'This action adds a new track';
+  private tracks: Track[] = [];
+
+  create(createTrackDto: CreateTrackDto): Track {
+    const newTrack: Track = {
+      id: uuidv4(),
+      ...createTrackDto,
+    };
+    this.tracks.push(newTrack);
+    return newTrack;
   }
 
-  findAll() {
-    return `This action returns all track`;
+  findAll(): Track[] {
+    return this.tracks;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} track`;
+  findOne(id: string): Track {
+    const track = this.tracks.find((track) => track.id === id);
+    if (!track) {
+      throw new NotFoundException(`Track with ID ${id} not found`);
+    }
+    return track;
   }
 
-  update(id: number, updateTrackDto: UpdateTrackDto) {
-    return `This action updates a #${id} track`;
+  update(id: string, updateTrackDto: UpdateTrackDto): Track {
+    const trackIndex = this.tracks.findIndex((track) => track.id === id);
+    if (trackIndex === -1) {
+      throw new NotFoundException(`Track with ID ${id} not found`);
+    }
+
+    const updatedTrack = {
+      ...this.tracks[trackIndex],
+      ...updateTrackDto,
+    };
+    this.tracks[trackIndex] = updatedTrack;
+    return updatedTrack;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} track`;
+  remove(id: string): Track {
+    const trackIndex = this.tracks.findIndex((track) => track.id === id);
+    if (trackIndex === -1) {
+      throw new NotFoundException(`Track with ID ${id} not found`);
+    }
+    return this.tracks.splice(trackIndex, 1)[0];
   }
 }
