@@ -1,10 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  forwardRef,
+  NotFoundException,
+  BadRequestException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { CreateFavDto } from './dto/create-fav.dto';
-import { UpdateFavDto } from './dto/update-fav.dto';
 import { Favorites } from './interfaces/favs.interface';
-import { Album } from '../album/interfaces/album.interface';
-import { Artist } from '../artist/interfaces/artist.interface';
-import { Track } from '../track/interfaces/track.interface';
+import { ArtistService } from '../artist/artist.service';
+import { AlbumService } from '../album/album.service';
+import { TrackService } from '../track/track.service';
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class FavsService {
@@ -14,38 +21,71 @@ export class FavsService {
     tracks: [],
   };
 
-  private artistData: Artist[] = [];
-  private albumData: Album[] = [];
-  private trackData: Track[] = [];
+  constructor(
+    @Inject(forwardRef(() => ArtistService))
+    private readonly artistService: ArtistService,
 
-  create(createFavDto: CreateFavDto) {
+    @Inject(forwardRef(() => AlbumService))
+    private readonly albumService: AlbumService,
+
+    @Inject(forwardRef(() => TrackService))
+    private readonly trackService: TrackService,
+  ) {}
+
+  private async validateItem(id: string, service: any, itemType: string) {
+    if (!isUUID(id)) {
+      throw new BadRequestException(`Invalid ${itemType} ID`);
+    }
+    const item = await service.findOne(id);
+    if (!item) {
+      throw new UnprocessableEntityException(`${itemType} does not exist`);
+    }
+    return item;
+  }
+
+  async create(createFavDto: CreateFavDto) {
     const { artistId, albumId, trackId } = createFavDto;
 
     if (artistId) {
-      this.favs.artists.push(artistId);
+      const artist = await this.validateItem(
+        artistId,
+        this.artistService,
+        'Artist',
+      );
+      this.favs.artists.push(artist.id);
     }
+
     if (albumId) {
-      this.favs.albums.push(albumId);
+      const album = await this.validateItem(
+        albumId,
+        this.albumService,
+        'Album',
+      );
+      this.favs.albums.push(album.id);
     }
+
     if (trackId) {
-      this.favs.tracks.push(trackId);
+      const track = await this.validateItem(
+        trackId,
+        this.trackService,
+        'Track',
+      );
+      this.favs.tracks.push(track.id);
     }
 
     return this.findAll();
   }
 
-  findAll() {
-    const fullArtists = this.favs.artists
-      .map((id) => this.artistData.find((artist) => artist.id === id))
-      .filter((artist): artist is Artist => artist !== undefined);
-
-    const fullAlbums = this.favs.albums
-      .map((id) => this.albumData.find((album) => album.id === id))
-      .filter((album): album is Album => album !== undefined);
-
-    const fullTracks = this.favs.tracks
-      .map((id) => this.trackData.find((track) => track.id === id))
-      .filter((track): track is Track => track !== undefined);
+  async findAll() {
+    const fullArtists = await Promise.all(
+      this.favs.artists.map((id) => this.artistService.findOne(id)),
+    );
+    const fullAlbums = await Promise.all(
+      this.favs.albums.map((id) => this.albumService.findOne(id)),
+    );
+    const fullTracks = await Promise.all(
+      this.favs.tracks.map((id) => this.trackService.findOne(id)),
+    );
 
     return {
       artists: fullArtists,
@@ -54,60 +94,41 @@ export class FavsService {
     };
   }
 
-  findOne(id: string, type: 'artist' | 'album' | 'track') {
-    switch (type) {
-      case 'artist':
-        return this.favs.artists.includes(id) ? id : null;
-      case 'album':
-        return this.favs.albums.includes(id) ? id : null;
-      case 'track':
-        return this.favs.tracks.includes(id) ? id : null;
-      default:
-        return null;
+  async update(id: string, type: 'artist' | 'album' | 'track') {
+    const service = this.getServiceByType(type);
+    const item = await this.validateItem(id, service, type);
+
+    const favsArray = this.favs[type + 's'];
+    if (!favsArray.includes(item.id)) {
+      favsArray.push(item.id);
     }
+    return { message: `${type} added to favorites` };
   }
 
-  update(id: string, updateFavDto: UpdateFavDto) {
-    const { artistId, albumId, trackId } = updateFavDto;
+  async remove(id: string, type: 'artist' | 'album' | 'track') {
+    const service = this.getServiceByType(type);
+    const item = await this.validateItem(id, service, type);
 
-    if (artistId) {
-      const index = this.favs.artists.indexOf(id);
-      if (index !== -1) {
-        this.favs.artists[index] = artistId;
-      }
+    const favsArray = this.favs[type + 's'];
+    const index = favsArray.indexOf(item.id);
+
+    if (index === -1) {
+      throw new NotFoundException(`${type} is not a favorite`);
     }
-
-    if (albumId) {
-      const index = this.favs.albums.indexOf(id);
-      if (index !== -1) {
-        this.favs.albums[index] = albumId;
-      }
-    }
-
-    if (trackId) {
-      const index = this.favs.tracks.indexOf(id);
-      if (index !== -1) {
-        this.favs.tracks[index] = trackId;
-      }
-    }
-
-    return this.favs;
+    favsArray.splice(index, 1);
+    return { message: `${type} removed from favorites` };
   }
 
-  remove(id: string, type: 'artist' | 'album' | 'track') {
+  private getServiceByType(type: 'artist' | 'album' | 'track') {
     switch (type) {
       case 'artist':
-        this.favs.artists = this.favs.artists.filter((artist) => artist !== id);
-        break;
+        return this.artistService;
       case 'album':
-        this.favs.albums = this.favs.albums.filter((album) => album !== id);
-        break;
+        return this.albumService;
       case 'track':
-        this.favs.tracks = this.favs.tracks.filter((track) => track !== id);
-        break;
+        return this.trackService;
       default:
-        break;
+        throw new BadRequestException(`Invalid favorite type: ${type}`);
     }
-    return this.favs;
   }
 }
