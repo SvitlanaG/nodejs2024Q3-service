@@ -1,5 +1,5 @@
 export class CreateFavDto {
-  artists: string[]; // favorite artists ids
-  albums: string[]; // favorite albums ids
-  tracks: string[]; // favorite tracks ids
+  artistId?: string;
+  albumId?: string;
+  trackId?: string;
 }

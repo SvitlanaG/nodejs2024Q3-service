@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { FavsService } from './favs.service';
 import { CreateFavDto } from './dto/create-fav.dto';
@@ -26,17 +27,23 @@ export class FavsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.favsService.findOne(+id);
+  findOne(
+    @Param('id') id: string,
+    @Query('type') type: 'artist' | 'album' | 'track',
+  ) {
+    return this.favsService.findOne(id, type);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateFavDto: UpdateFavDto) {
-    return this.favsService.update(+id, updateFavDto);
+    return this.favsService.update(id, updateFavDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.favsService.remove(+id);
+  remove(
+    @Param('id') id: string,
+    @Query('type') type: 'artist' | 'album' | 'track',
+  ) {
+    return this.favsService.remove(id, type);
   }
 }
