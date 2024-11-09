@@ -1,7 +1,7 @@
 export interface User {
   id: string;
   login: string;
-  password: string; // not return to client
+  password: string;
   version: number;
   createdAt: number;
   updatedAt: number;

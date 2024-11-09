@@ -3,14 +3,14 @@ import {
   Inject,
   forwardRef,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { AlbumService } from '../album/album.service';
 import { TrackService } from '../track/track.service';
-import { FavsService } from '../favs/favs.service';
 import { CreateArtistDto } from './dto/create-artist.dto';
 import { UpdateArtistDto } from './dto/update-artist.dto';
 import { Artist } from './interfaces/artist.interface';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4, validate as isUuid } from 'uuid';
 
 @Injectable()
 export class ArtistService {
@@ -22,15 +22,13 @@ export class ArtistService {
 
     @Inject(forwardRef(() => TrackService))
     private readonly trackService: TrackService,
-
-    @Inject(forwardRef(() => FavsService))
-    private readonly favsService: FavsService,
   ) {}
 
   create(createArtistDto: CreateArtistDto): Artist {
     const newArtist: Artist = {
-      ...createArtistDto,
       id: uuidv4(),
+      name: createArtistDto.name,
+      grammy: createArtistDto.grammy,
     };
     this.artists.push(newArtist);
     return newArtist;
@@ -41,6 +39,9 @@ export class ArtistService {
   }
 
   findOne(id: string): Artist {
+    if (!isUuid(id)) {
+      throw new BadRequestException('Invalid UUID format');
+    }
     const artist = this.artists.find((artist) => artist.id === id);
     if (!artist) {
       throw new NotFoundException(`Artist with ID ${id} not found`);
@@ -49,6 +50,9 @@ export class ArtistService {
   }
 
   update(id: string, updateArtistDto: UpdateArtistDto): Artist {
+    if (!isUuid(id)) {
+      throw new BadRequestException('Invalid UUID format');
+    }
     const artistIndex = this.artists.findIndex((artist) => artist.id === id);
     if (artistIndex === -1) {
       throw new NotFoundException(`Artist with ID ${id} not found`);
@@ -62,15 +66,17 @@ export class ArtistService {
     return updatedArtist;
   }
 
-  remove(id: string): Artist {
+  remove(id: string): void {
+    if (!isUuid(id)) {
+      throw new BadRequestException('Invalid UUID format');
+    }
     const artistIndex = this.artists.findIndex((artist) => artist.id === id);
     if (artistIndex === -1) {
       throw new NotFoundException(`Artist with ID ${id} not found`);
     }
 
     this.albumService.nullifyArtistId(id);
-    this.trackService.nullifyAlbumId(id);
-    this.favsService.remove(id, 'artist');
-    return this.artists.splice(artistIndex, 1)[0];
+    this.trackService.nullifyArtistId(id);
+    this.artists.splice(artistIndex, 1);
   }
 }

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   forwardRef,
   Inject,
   Injectable,
@@ -7,9 +8,8 @@ import {
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
 import { Album } from './interfaces/album.interface';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4, validate as isUuid } from 'uuid';
 import { ArtistService } from '../artist/artist.service';
-import { FavsService } from '../favs/favs.service';
 import { TrackService } from '../track/track.service';
 
 @Injectable()
@@ -22,9 +22,6 @@ export class AlbumService {
 
     @Inject(forwardRef(() => TrackService))
     private readonly trackService: TrackService,
-
-    @Inject(forwardRef(() => FavsService))
-    private readonly favsService: FavsService,
   ) {}
 
   create(createAlbumDto: CreateAlbumDto): Album {
@@ -41,6 +38,9 @@ export class AlbumService {
   }
 
   findOne(id: string): Album {
+    if (!isUuid(id)) {
+      throw new BadRequestException('Invalid UUID format');
+    }
     const album = this.albums.find((album) => album.id === id);
     if (!album) {
       throw new NotFoundException(`Album with ID ${id} not found`);
@@ -49,6 +49,9 @@ export class AlbumService {
   }
 
   update(id: string, updateAlbumDto: UpdateAlbumDto): Album {
+    if (!isUuid(id)) {
+      throw new BadRequestException('Invalid UUID format');
+    }
     const albumIndex = this.albums.findIndex((album) => album.id === id);
     if (albumIndex === -1) {
       throw new NotFoundException(`Album with ID ${id} not found`);
@@ -62,15 +65,17 @@ export class AlbumService {
     return updatedAlbum;
   }
 
-  remove(id: string): Album {
+  remove(id: string): void {
+    if (!isUuid(id)) {
+      throw new BadRequestException('Invalid UUID format');
+    }
     const albumIndex = this.albums.findIndex((album) => album.id === id);
     if (albumIndex === -1) {
       throw new NotFoundException(`Album with ID ${id} not found`);
     }
 
     this.trackService.nullifyAlbumId(id);
-    this.favsService.remove(id, 'album');
-    return this.albums.splice(albumIndex, 1)[0];
+    this.albums.splice(albumIndex, 1);
   }
 
   nullifyArtistId(artistId: string) {
