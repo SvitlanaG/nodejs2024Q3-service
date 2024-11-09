@@ -84,19 +84,39 @@ export class FavsService {
 
   async findAll(): Promise<FavoritesResponse> {
     const fullArtists = await Promise.all(
-      this.favs.artists.map((id) => this.artistService.findOne(id)),
+      this.favs.artists.map(async (id) => {
+        try {
+          return await this.artistService.findOne(id);
+        } catch {
+          return null;
+        }
+      }),
     );
+
     const fullAlbums = await Promise.all(
-      this.favs.albums.map((id) => this.albumService.findOne(id)),
+      this.favs.albums.map(async (id) => {
+        try {
+          return await this.albumService.findOne(id);
+        } catch {
+          return null;
+        }
+      }),
     );
+
     const fullTracks = await Promise.all(
-      this.favs.tracks.map((id) => this.trackService.findOne(id)),
+      this.favs.tracks.map(async (id) => {
+        try {
+          return await this.trackService.findOne(id);
+        } catch {
+          return null;
+        }
+      }),
     );
 
     return {
-      artists: fullArtists.filter((artist) => artist),
-      albums: fullAlbums.filter((album) => album),
-      tracks: fullTracks.filter((track) => track),
+      artists: fullArtists.filter((artist) => artist !== null),
+      albums: fullAlbums.filter((album) => album !== null),
+      tracks: fullTracks.filter((track) => track !== null),
     };
   }
 
