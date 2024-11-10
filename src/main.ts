@@ -12,7 +12,7 @@ async function bootstrap() {
     .addTag('library')
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory);
+  SwaggerModule.setup('doc', app, documentFactory);
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
   await app.listen(4000);
 }
