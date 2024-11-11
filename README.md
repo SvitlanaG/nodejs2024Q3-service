@@ -14,7 +14,7 @@ Before you begin, ensure you have the following installed:
 Clone the repository to your local machine by running:
 
 ```
-git clone {git@github.com:SvitlanaG/nodejs2024Q3-service.git}
+git clone git@github.com:SvitlanaG/nodejs2024Q3-service.git
 cd nodejs2024Q3-service
 ```
 
