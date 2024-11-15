@@ -1,0 +1,32 @@
+# Node modules and build output
+
+node_modules
+dist
+
+# Local environment files
+
+.env
+.env.\*
+
+# Temporary files
+
+_.log
+_.tmp
+\*.tsbuildinfo
+
+# Git and version control
+
+.git
+.gitignore
+
+# IDE
+
+.vscode
+
+# Docker-related files
+
+docker-compose.override.yml
+
+# OS
+
+.DS_Store
