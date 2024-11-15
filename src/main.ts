@@ -14,7 +14,7 @@ async function bootstrap() {
     .addTag('library')
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('doc', app, documentFactory);
+  SwaggerModule.setup('doc', app, documentFactory());
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
   const port = configService.get<number>('PORT', 4000);
   await app.listen(port);
