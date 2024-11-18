@@ -1,0 +1,35 @@
+# Node modules and build output
+
+node_modules
+dist
+
+# Local environment files
+
+.env
+.env.\*
+
+# Temporary files
+
+_.log
+_.tmp
+\*.tsbuildinfo
+npm-debug.log
+
+# Git and version control
+
+.git
+.gitignore
+
+# IDE
+
+.vscode
+
+# Docker-related files
+
+docker-compose.override.yml
+Dockerfile
+.dockerignore
+
+# OS
+
+.DS_Store
