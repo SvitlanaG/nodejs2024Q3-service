@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -15,37 +9,60 @@ datasource db {
 
 model User {
   id        String   @id @default(uuid())
-  login     String
+  login     String   @unique
   password  String
   version   Int
-  createdAt Int
-  updatedAt Int
+  createdAt DateTime
+  updatedAt DateTime
 }
 
 model Artist {
-  id     String  @id @default(uuid())
-  name   String
-  grammy Boolean
-}
+  id        String      @id @default(uuid())
+  name      String
+  grammy    Boolean
+  albums    Album[]
+  tracks    Track[]
+  favorites Favorites[] @relation("FavoritesArtists")
 
-model Track {
-  id       String  @id @default(uuid())
-  name     String
-  artistId String? @relation("TrackArtist", fields: [artistId], references: [id])
-  albumId  String? @relation("TrackAlbum", fields: [albumId], references: [id])
-  duration Int
+  @@index([name])
+  @@map("artists")
 }
 
 model Album {
-  id       String  @id @default(uuid())
-  name     String
-  year     Int
-  artistId String? @relation("AlbumArtist", fields: [artistId], references: [id])
+  id        String      @id @default(uuid())
+  name      String
+  year      Int
+  artistId  String?     @map("artist_id")
+  artist    Artist?     @relation(fields: [artistId], references: [id])
+  tracks    Track[]
+  favorites Favorites[] @relation("FavoritesAlbums")
+
+  @@index([name])
+  @@index([artistId])
+  @@map("albums")
+}
+
+model Track {
+  id        String      @id @default(uuid())
+  name      String
+  artistId  String?     @map("artist_id")
+  albumId   String?     @map("album_id")
+  duration  Int
+  album     Album?      @relation(fields: [albumId], references: [id])
+  artist    Artist?     @relation(fields: [artistId], references: [id])
+  favorites Favorites[] @relation("FavoritesTracks")
+
+  @@index([name])
+  @@index([artistId])
+  @@index([albumId])
+  @@map("tracks")
 }
 
 model Favorites {
-  id       String   @id @default(uuid())
-  artists  String[]
-  albums   String[]
-  tracks   String[]
+  id      String   @id @default(uuid())
+  artists Artist[] @relation("FavoritesArtists")
+  albums  Album[]  @relation("FavoritesAlbums")
+  tracks  Track[]  @relation("FavoritesTracks")
+
+  @@map("favorites")
 }

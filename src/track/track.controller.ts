@@ -28,8 +28,8 @@ export class TrackController {
     description: 'The track has been successfully created.',
     type: TrackResponse,
   })
-  create(@Body() createTrackDto: CreateTrackDto): TrackResponse {
-    return this.trackService.create(createTrackDto);
+  async create(@Body() createTrackDto: CreateTrackDto): Promise<TrackResponse> {
+    return await this.trackService.create(createTrackDto);
   }
 
   @Get()
@@ -39,8 +39,8 @@ export class TrackController {
     description: 'Return all track records',
     type: [TrackResponse],
   })
-  findAll(): TrackResponse[] {
-    return this.trackService.findAll();
+  async findAll(): Promise<TrackResponse[]> {
+    return await this.trackService.findAll();
   }
 
   @Get(':id')
@@ -55,8 +55,8 @@ export class TrackController {
     status: 404,
     description: 'Track with the specified ID does not exist',
   })
-  findOne(@Param('id') id: string): TrackResponse {
-    return this.trackService.findOne(id);
+  async findOne(@Param('id') id: string): Promise<TrackResponse> {
+    return await this.trackService.findOne(id);
   }
 
   @Put(':id')
@@ -72,11 +72,11 @@ export class TrackController {
     status: 404,
     description: 'Track with the specified ID does not exist',
   })
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updateTrackDto: UpdateTrackDto,
-  ): TrackResponse {
-    return this.trackService.update(id, updateTrackDto);
+  ): Promise<TrackResponse> {
+    return await this.trackService.update(id, updateTrackDto);
   }
 
   @Delete(':id')
@@ -91,7 +91,7 @@ export class TrackController {
     status: 404,
     description: 'Track with the specified ID does not exist',
   })
-  remove(@Param('id') id: string): void {
-    this.trackService.remove(id);
+  async remove(@Param('id') id: string): Promise<void> {
+    await this.trackService.remove(id);
   }
 }

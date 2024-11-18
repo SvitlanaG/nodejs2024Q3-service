@@ -1,82 +1,113 @@
 import {
-  Injectable,
-  Inject,
-  forwardRef,
-  NotFoundException,
   BadRequestException,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
-import { AlbumService } from '../album/album.service';
-import { TrackService } from '../track/track.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateArtistDto } from './dto/create-artist.dto';
 import { UpdateArtistDto } from './dto/update-artist.dto';
+import { validate as isUuid } from 'uuid';
 import { Artist } from './interfaces/artist.interface';
-import { v4 as uuidv4, validate as isUuid } from 'uuid';
 
 @Injectable()
 export class ArtistService {
-  private artists: Artist[] = [];
+  constructor(private readonly prisma: PrismaService) {}
 
-  constructor(
-    @Inject(forwardRef(() => AlbumService))
-    private readonly albumService: AlbumService,
-
-    @Inject(forwardRef(() => TrackService))
-    private readonly trackService: TrackService,
-  ) {}
-
-  create(createArtistDto: CreateArtistDto): Artist {
-    const newArtist: Artist = {
-      id: uuidv4(),
-      name: createArtistDto.name,
-      grammy: createArtistDto.grammy,
-    };
-    this.artists.push(newArtist);
-    return newArtist;
+  async create(createArtistDto: CreateArtistDto) {
+    return this.prisma.artist.create({
+      data: createArtistDto,
+    });
   }
 
-  findAll(): Artist[] {
-    return this.artists;
+  async findAll() {
+    return this.prisma.artist.findMany();
   }
 
-  findOne(id: string): Artist {
+  async findOne(id: string) {
     if (!isUuid(id)) {
       throw new BadRequestException('Invalid UUID format');
     }
-    const artist = this.artists.find((artist) => artist.id === id);
+    const artist = await this.prisma.artist.findUnique({
+      where: { id },
+    });
     if (!artist) {
       throw new NotFoundException(`Artist with ID ${id} not found`);
     }
     return artist;
   }
 
-  update(id: string, updateArtistDto: UpdateArtistDto): Artist {
+  async update(id: string, updateArtistDto: UpdateArtistDto) {
     if (!isUuid(id)) {
       throw new BadRequestException('Invalid UUID format');
     }
-    const artistIndex = this.artists.findIndex((artist) => artist.id === id);
-    if (artistIndex === -1) {
+    const artist = await this.prisma.artist.findUnique({
+      where: { id },
+    });
+    if (!artist) {
       throw new NotFoundException(`Artist with ID ${id} not found`);
     }
 
-    const updatedArtist = {
-      ...this.artists[artistIndex],
-      ...updateArtistDto,
-    };
-    this.artists[artistIndex] = updatedArtist;
-    return updatedArtist;
+    return this.prisma.artist.update({
+      where: { id },
+      data: updateArtistDto,
+    });
   }
 
-  remove(id: string): void {
+  async remove(id: string) {
     if (!isUuid(id)) {
       throw new BadRequestException('Invalid UUID format');
     }
-    const artistIndex = this.artists.findIndex((artist) => artist.id === id);
-    if (artistIndex === -1) {
+
+    const artist = await this.prisma.artist.findUnique({
+      where: { id },
+    });
+    if (!artist) {
       throw new NotFoundException(`Artist with ID ${id} not found`);
     }
 
-    this.albumService.nullifyArtistId(id);
-    this.trackService.nullifyArtistId(id);
-    this.artists.splice(artistIndex, 1);
+    await this.prisma.track.updateMany({
+      where: { artistId: id },
+      data: { artistId: null },
+    });
+
+    await this.prisma.album.updateMany({
+      where: { artistId: id },
+      data: { artistId: null },
+    });
+
+    const favoritesToUpdate = await this.prisma.favorites.findMany({
+      where: {
+        artists: {
+          some: {
+            id: id,
+          },
+        },
+      },
+    });
+
+    for (const favorite of favoritesToUpdate) {
+      await this.prisma.favorites.update({
+        where: { id: favorite.id },
+        data: {
+          artists: {
+            disconnect: { id },
+          },
+        },
+      });
+    }
+
+    return this.prisma.artist.delete({
+      where: { id },
+    });
+  }
+
+  async findMany({
+    where,
+  }: {
+    where: { id: { in: string[] } };
+  }): Promise<Artist[]> {
+    return this.prisma.artist.findMany({
+      where,
+    });
   }
 }

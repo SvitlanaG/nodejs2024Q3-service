@@ -24,8 +24,8 @@ export class FavsController {
     description: 'Successfully retrieved all favorites',
     type: FavoritesResponse,
   })
-  findAll() {
-    return this.favsService.findAll();
+  async findAll() {
+    return await this.favsService.findAll();
   }
 
   @Post('track/:id')
@@ -79,8 +79,8 @@ export class FavsController {
     status: 404,
     description: 'Track not found in favorites',
   })
-  removeTrack(@Param('id') id: string) {
-    this.favsService.removeTrack(id);
+  async removeTrack(@Param('id') id: string) {
+    await this.favsService.removeTrack(id);
   }
 
   @Post('album/:id')
@@ -134,8 +134,8 @@ export class FavsController {
     status: 404,
     description: 'Album not found in favorites',
   })
-  removeAlbum(@Param('id') id: string) {
-    this.favsService.removeAlbum(id);
+  async removeAlbum(@Param('id') id: string) {
+    await this.favsService.removeAlbum(id);
   }
 
   @Post('artist/:id')
@@ -189,7 +189,7 @@ export class FavsController {
     status: 404,
     description: 'Artist not found in favorites',
   })
-  removeArtist(@Param('id') id: string) {
-    this.favsService.removeArtist(id);
+  async removeArtist(@Param('id') id: string) {
+    await this.favsService.removeArtist(id);
   }
 }

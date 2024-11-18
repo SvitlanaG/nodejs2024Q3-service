@@ -13,6 +13,7 @@ dist
 _.log
 _.tmp
 \*.tsbuildinfo
+npm-debug.log
 
 # Git and version control
 
@@ -26,6 +27,8 @@ _.tmp
 # Docker-related files
 
 docker-compose.override.yml
+Dockerfile
+.dockerignore
 
 # OS
 

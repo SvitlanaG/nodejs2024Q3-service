@@ -35,8 +35,8 @@ export class UserController {
     status: 400,
     description: 'Bad request - Missing required fields or invalid data',
   })
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
+  async create(@Body() createUserDto: CreateUserDto) {
+    return await this.userService.create(createUserDto);
   }
 
   @Get()
@@ -46,8 +46,8 @@ export class UserController {
     description: 'List of all users',
     type: [UserResponse],
   })
-  findAll() {
-    return this.userService.findAll();
+  async findAll() {
+    return await this.userService.findAll();
   }
 
   @Get(':id')
@@ -71,8 +71,8 @@ export class UserController {
     status: 404,
     description: 'User not found with the given ID',
   })
-  findOne(@Param('id') id: string) {
-    return this.userService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    return await this.userService.findOne(id);
   }
 
   @Put(':id')
@@ -104,11 +104,11 @@ export class UserController {
     status: 403,
     description: 'Incorrect old password',
   })
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updatePasswordDto: UpdatePasswordDto,
   ) {
-    return this.userService.update(id, updatePasswordDto);
+    return await this.userService.update(id, updatePasswordDto);
   }
 
   @Delete(':id')
@@ -132,7 +132,7 @@ export class UserController {
     status: 404,
     description: 'User not found with the given ID',
   })
-  remove(@Param('id') id: string) {
-    this.userService.remove(id);
+  async remove(@Param('id') id: string) {
+    await this.userService.remove(id);
   }
 }

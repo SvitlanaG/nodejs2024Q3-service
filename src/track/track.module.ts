@@ -4,9 +4,11 @@ import { TrackController } from './track.controller';
 import { ArtistModule } from '../artist/artist.module';
 import { AlbumModule } from '../album/album.module';
 import { FavsModule } from '../favs/favs.module';
+import { PrismaModule } from 'prisma/prisma.module';
 
 @Module({
   imports: [
+    PrismaModule,
     forwardRef(() => AlbumModule),
     forwardRef(() => ArtistModule),
     forwardRef(() => FavsModule),

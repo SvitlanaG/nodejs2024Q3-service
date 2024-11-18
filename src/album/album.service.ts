@@ -1,86 +1,110 @@
 import {
   BadRequestException,
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PrismaService } from 'prisma/prisma.service';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { UpdateAlbumDto } from './dto/update-album.dto';
+import { validate as isUuid } from 'uuid';
 import { Album } from './interfaces/album.interface';
-import { v4 as uuidv4, validate as isUuid } from 'uuid';
-import { ArtistService } from '../artist/artist.service';
-import { TrackService } from '../track/track.service';
 
 @Injectable()
 export class AlbumService {
-  private albums: Album[] = [];
+  constructor(private readonly prisma: PrismaService) {}
 
-  constructor(
-    @Inject(forwardRef(() => ArtistService))
-    private readonly artistService: ArtistService,
-
-    @Inject(forwardRef(() => TrackService))
-    private readonly trackService: TrackService,
-  ) {}
-
-  create(createAlbumDto: CreateAlbumDto): Album {
-    const newAlbum: Album = {
-      id: uuidv4(),
-      ...createAlbumDto,
-    };
-    this.albums.push(newAlbum);
-    return newAlbum;
+  async create(createAlbumDto: CreateAlbumDto) {
+    return this.prisma.album.create({
+      data: createAlbumDto,
+    });
   }
 
-  findAll(): Album[] {
-    return this.albums;
+  async findAll() {
+    return this.prisma.album.findMany();
   }
 
-  findOne(id: string): Album {
+  async findOne(id: string) {
     if (!isUuid(id)) {
       throw new BadRequestException('Invalid UUID format');
     }
-    const album = this.albums.find((album) => album.id === id);
+    const album = await this.prisma.album.findUnique({
+      where: { id },
+    });
     if (!album) {
       throw new NotFoundException(`Album with ID ${id} not found`);
     }
     return album;
   }
 
-  update(id: string, updateAlbumDto: UpdateAlbumDto): Album {
+  async update(id: string, updateAlbumDto: UpdateAlbumDto) {
     if (!isUuid(id)) {
       throw new BadRequestException('Invalid UUID format');
     }
-    const albumIndex = this.albums.findIndex((album) => album.id === id);
-    if (albumIndex === -1) {
+    const album = await this.prisma.album.findUnique({
+      where: { id },
+    });
+    if (!album) {
       throw new NotFoundException(`Album with ID ${id} not found`);
     }
-
-    const updatedAlbum = {
-      ...this.albums[albumIndex],
-      ...updateAlbumDto,
-    };
-    this.albums[albumIndex] = updatedAlbum;
-    return updatedAlbum;
+    return this.prisma.album.update({
+      where: { id },
+      data: updateAlbumDto,
+    });
   }
 
-  remove(id: string): void {
+  async remove(id: string) {
     if (!isUuid(id)) {
       throw new BadRequestException('Invalid UUID format');
     }
-    const albumIndex = this.albums.findIndex((album) => album.id === id);
-    if (albumIndex === -1) {
+
+    const album = await this.prisma.album.findUnique({
+      where: { id },
+    });
+    if (!album) {
       throw new NotFoundException(`Album with ID ${id} not found`);
     }
 
-    this.trackService.nullifyAlbumId(id);
-    this.albums.splice(albumIndex, 1);
+    await this.prisma.track.updateMany({
+      where: { albumId: id },
+      data: { albumId: null },
+    });
+
+    const favoritesToUpdate = await this.prisma.favorites.findMany({
+      where: {
+        albums: {
+          some: {
+            id: id,
+          },
+        },
+      },
+      include: {
+        albums: true,
+      },
+    });
+
+    for (const favorite of favoritesToUpdate) {
+      await this.prisma.favorites.update({
+        where: { id: favorite.id },
+        data: {
+          albums: {
+            disconnect: { id },
+          },
+        },
+      });
+    }
+
+    return this.prisma.album.delete({
+      where: { id },
+    });
   }
 
-  nullifyArtistId(artistId: string) {
-    this.albums = this.albums.map((album) =>
-      album.artistId === artistId ? { ...album, artistId: null } : album,
-    );
+  async findMany({
+    where,
+  }: {
+    where: { id: { in: string[] } };
+  }): Promise<Album[]> {
+    return this.prisma.album.findMany({
+      where,
+    });
   }
 }
